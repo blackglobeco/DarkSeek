@@ -1,33 +1,43 @@
-from telethon import TelegramClient, events
+# main.py
+from telegram import Update, Bot
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 import config as cfg
 from utils import chat_request
 
-app = TelegramClient('UserBot_Session', api_id=None, api_hash=None).start(bot_token=cfg.BOT_TOKEN)
+# Initialize bot
+bot = Bot(token=cfg.BOT_TOKEN)
 
-@app.on(events.NewMessage(incoming=True))
-async def on_incoming_message(event: events.NewMessage.Event):
-    user_id = event.message.sender_id
-    
+def start(update: Update, context: CallbackContext) -> None:
+    user_id = update.effective_user.id
     if user_id not in cfg.ALLOWED_USERS:
-        await event.message.reply("You are not authorized to use this bot.")
+        update.message.reply_text("You are not authorized to use this bot.")
         return
-    
-    prompt = event.message.message
-    
-    if prompt == "/start":
-        await event.message.reply("Hello, I am the DeepSeek R1 Telegram Bot. Chat with me here.")
-        return
-    
-    answer = chat_request(prompt)
+    update.message.reply_text("Hello, I am the DeepSeek R1 Telegram Bot. Chat with me here.")
 
+def handle_message(update: Update, context: CallbackContext) -> None:
+    user_id = update.effective_user.id
+    if user_id not in cfg.ALLOWED_USERS:
+        update.message.reply_text("You are not authorized to use this bot.")
+        return
+    
+    prompt = update.message.text
+    answer = chat_request(prompt)
+    
     if answer:
-        await event.message.reply(answer)
+        update.message.reply_text(answer)
     else:
-        await event.message.reply("Error. Try again.")
+        update.message.reply_text("Error. Try again.")
+
+def main() -> None:
+    updater = Updater(cfg.BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
+    
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+    
+    updater.start_polling()
+    updater.idle()
 
 if __name__ == "__main__":
-    try:
-        print("Program Started")
-        app.run_until_disconnected()
-    except KeyboardInterrupt:
-        print("Program Finished")
+    print("Program Started")
+    main()
