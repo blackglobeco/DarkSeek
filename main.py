@@ -13,6 +13,11 @@ async def on_incoming_message(event: events.NewMessage.Event):
         return
     
     prompt = event.message.message
+    
+    if prompt == "/start":
+        await event.message.reply("Hello, I am the DeepSeek R1 Telegram Bot. Chat with me here.")
+        return
+    
     answer = chat_request(prompt)
 
     if answer:
